@@ -73,26 +73,38 @@ def read(filename):
         _garner_sentence(pre)
 
 
-def random_word():
-    return random.choice(list(corpus.keys()))
-
-
-def random_words():
-    word = random_word()
+def random_words(sats=None):
+    word = None
     sentence = []
+    while word is not __END and (sats is None or len(sats) > 0):
+        # This conditional will just end the sentence if the sat conditions
+        # end. Should realistically reject a sentence of the wrong length and
+        # find one that fits better, but ehh
 
-    while word is not __END:
-        sentence.append(word)
-        word = next(word)
+        sat = sats.pop(0) if sats else _always_sat
+        word = next_word(word, sat=sat)
 
+        if word is __END:
+            sats.insert(0, sat)
+        else:
+            sentence.append(word)
     return sentence
 
 
-def sentence(words=None):
+def _always_sat(word):
+    return True
+
+
+def _compound_sat(sat):
+    return lambda x: x is __END or sat(x)
+
+
+def sentence(words=None, sats=None):
     if not words:
-        words = random_words()
+        words = random_words(sats)
     return (' '.join(words) + _punctuation()).capitalize()
 
 
-def next(word):
-    return random.choice(corpus[word])
+def next_word(prev_word=None, sat=_always_sat):
+    l = list(filter(_compound_sat(sat), corpus[prev_word] if prev_word else list(corpus.keys())))
+    return random.choice(l) if l else __END
